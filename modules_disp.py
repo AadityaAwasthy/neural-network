@@ -7,7 +7,7 @@ def classify(X, Y, nn, it=10000, lr=0.005):
     N = X.shape[1]
     O = Y.shape[0]
     # Modifies the weights and biases
-    nn.sgd(X, Y, it, lr)
+    nn.mini_gd(X, Y, it, lr)
 
     # Draw it...
     def predict(x):

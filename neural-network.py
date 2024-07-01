@@ -1,4 +1,5 @@
 import numpy as np
+import math as m
 import modules_disp as disp
 from expected_results import *
 
@@ -23,7 +24,7 @@ class Linear(Module):
         self.W = np.random.normal(0, 1.0 * m ** (-.5), [m, n])  # (m x n)
 
     def forward(self, A):
-        self.A = A   # (m x b)  Hint: make sure you understand what b stands for
+        self.A = np.mean(A, axis=1, keepdims=True)   # (m x b)  Hint: make sure you understand what b stands for
         return (self.W).T@A + self.W0  # Your code (n x b)
 
     def backward(self, dLdZ):  # dLdZ is (n x b), uses stored self.A
@@ -55,8 +56,9 @@ class Tanh(Module):  # Layer activation
 
 class ReLU(Module):  # Layer activation
     def forward(self, Z):
-        self.A = np.maximum(0, Z)  # Your code: (?, b)
-        return self.A
+        self.A = np.mean(Z, axis=1, keepdims=True)  
+        forw = np.maximum(0, Z)
+        return forw 
 
     def backward(self, dLdA):  # uses stored self.A
         return np.where(self.A != 0, dLdA, 0)  # Your code: return dLdZ (?, b)
@@ -114,9 +116,41 @@ class Sequential:
             delta = self.loss.backward()
 
             self.backward(delta)
-            self.sgd_step(lrate)
+            self.step(lrate)
 
             self.print_accuracy(it, X, Y, cur_loss, 10000)
+
+    def mini_gd(self, X, Y, iters, lrate, notif_each=None, K=10):
+        D, N = X.shape
+
+        np.random.seed(0)
+        num_updates = 0
+        indices = np.arange(N)
+        while num_updates < iters:
+
+            np.random.shuffle(indices)
+            X = X[: , indices]  # Your code
+            Y = Y[: , indices]  # Your code
+
+            for j in range(m.floor(N/K)):
+                if num_updates >= iters: break
+
+                # Implement the main part of mini_gd here
+                # Your code
+                x = X[: , j*K : j*K + K]
+                y = Y[: , j*K : j*K + K]
+
+                predicted_output = self.forward(x)
+                cur_loss = self.loss.forward(predicted_output, y)
+                delta = self.loss.backward()
+
+                self.backward(delta)
+                self.step(lrate)
+
+
+                num_updates += 1
+
+                self.print_accuracy(num_updates, X, Y, cur_loss, 10000)
 
 
     def forward(self, Xt):  # Compute Ypred
@@ -130,7 +164,7 @@ class Sequential:
             # course of the for loop, depending on the module m
             delta = m.backward(delta)
 
-    def sgd_step(self, lrate):  # Gradient descent step
+    def step(self, lrate):  # Gradient descent step
         for m in self.modules: m.sgd_step(lrate)
 
     def print_accuracy(self, it, X, Y, cur_loss, every=250):
@@ -316,9 +350,9 @@ def sgd_test(nn, test_values):
 #
 # # TEST 3: you should achieve 100% accuracy on the hard dataset (note
 # # that we provided plotting code)
-# X, Y = hard()
-# nn = Sequential([Linear(2, 10), ReLU(), Linear(10, 10), ReLU(), Linear(10,2), SoftMax()], NLL())
-# disp.classify(X, Y, nn, it=100000)
+X, Y = hard()
+nn = Sequential([Linear(2, 10), ReLU(), Linear(10, 10), ReLU(), Linear(10,2), SoftMax()], NLL())
+disp.classify(X, Y, nn, it=100000)
 #
 
 # TEST 4: try calling these methods that train with a simple dataset
