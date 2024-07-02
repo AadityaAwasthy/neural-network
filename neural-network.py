@@ -24,11 +24,11 @@ class Linear(Module):
         self.W = np.random.normal(0, 1.0 * m ** (-.5), [m, n])  # (m x n)
 
     def forward(self, A):
-        self.A = np.mean(A, axis=1, keepdims=True)   # (m x b)  Hint: make sure you understand what b stands for
+        self.A = A   # (m x b)  Hint: make sure you understand what b stands for
         return (self.W).T@A + self.W0  # Your code (n x b)
 
     def backward(self, dLdZ):  # dLdZ is (n x b), uses stored self.A
-        self.dLdW  = (self.A@(dLdZ).T)  # Your code
+        self.dLdW  = (self.A)@(dLdZ.T) # Your code
         self.dLdW0 = np.sum(dLdZ, axis=1, keepdims=True)  # Your code
         return self.W@dLdZ        # Your code: return dLdA (m x b)
 
@@ -51,14 +51,13 @@ class Tanh(Module):  # Layer activation
         return self.A
 
     def backward(self, dLdA):  # Uses stored self.A
-        return dLdA*(1 - self.A*self.A)  # Your code: return dLdZ (?, b)
+        return dLdA*(1 - self.A**2)  # Your code: return dLdZ (?, b)
 
 
 class ReLU(Module):  # Layer activation
-    def forward(self, Z):
-        self.A = np.mean(Z, axis=1, keepdims=True)  
-        forw = np.maximum(0, Z)
-        return forw 
+    def forward(self, Z): # Z is (m x b)
+        self.A = np.maximum(0, Z);
+        return self.A 
 
     def backward(self, dLdA):  # uses stored self.A
         return np.where(self.A != 0, dLdA, 0)  # Your code: return dLdZ (?, b)
@@ -66,15 +65,13 @@ class ReLU(Module):  # Layer activation
 
 class SoftMax(Module):  # Output activation
     def forward(self, Z):
-        raised_to_e = np.exp(Z)
-        self.A = raised_to_e/np.sum(raised_to_e, axis=0, keepdims=True)
-        return self.A  # Your code: (?, b)
+        return np.exp(Z)/np.sum(np.exp(Z), axis=0)  # Your code: (?, b)
 
     def backward(self, dLdZ):  # Assume that dLdZ is passed in
         return dLdZ
 
     def class_fun(self, Ypred):  # Return class indices
-        return np.argmax(self.A, axis=0)  # Your code: (1, b)
+        return np.argmax(Ypred, axis=0)  # Your code: (1, b)
 
 
 # Loss modules
@@ -91,10 +88,10 @@ class NLL(Module):  # Loss
     def forward(self, Ypred, Y):
         self.Ypred = Ypred
         self.Y = Y
-        return np.sum(-1*(Y*np.log(Ypred)), keepdims=True)  # Your code: return loss (scalar)
+        return float(np.sum(-1*(Y*np.log(Ypred)), keepdims=True))  # Your code: return loss (scalar)
 
     def backward(self):  # Use stored self.Ypred, self.Y
-        return np.sum(self.Ypred - self.Y, axis=1, keepdims=True)   # Your code (?, b)
+        return self.Ypred - self.Y   # Your code (?, b)
 
 
 # Neural Network implementation
